@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2025-04-18
+
+### Added
+- Full CRUD support for tasks within each goal on the Goals page (add, edit, delete, mark complete/incomplete).
+- Edit and delete dialogs for tasks, with modern UI using React Native Paper.
+- Progress bar updates automatically when tasks are changed.
+- Added `expo-updates` and `eas-cli` to dependencies for EAS Update support.
+
+### Changed
+- Improved Goals page UI to match Habits page aesthetics and usability.
+- Updated task text color for better visibility in dark mode.
+
+### Migration
+- Migrated publishing workflow from deprecated `expo publish` to new EAS Update system (`expo-updates`, `eas-cli`).
+- Updated instructions for publishing and project setup to follow Expo SDK 52+ best practices.
+
+### Fixed
+- Resolved issues with Expo Go not loading on iPhone by clarifying network and publishing setup.
+
+### Current State
+- Goals and Habits pages are both fully functional with modern UI and local persistence.
+- Project is ready for EAS Update and App Store/Play Store builds using EAS CLI.
+
 ## [Unreleased] - 2025-04-17
 
 ### Added
