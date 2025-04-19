@@ -1,13 +1,63 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, Image } from 'react-native';
-import { Text, Button, Card, IconButton, FAB, Portal, Dialog, TextInput, useTheme, Avatar } from 'react-native-paper';
+import { Text, Button, Card, IconButton, FAB, Portal, Dialog, TextInput, useTheme, Avatar, MD3Theme } from 'react-native-paper';
 import { habitService } from '../../services/habitService';
 import { Habit } from '../../models/Habit';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 
+const getStyles = (theme: MD3Theme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    backgroundColor: theme.colors.background,
+  },
+  card: {
+    marginBottom: 12,
+    borderRadius: 8,
+  },
+  habitTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    flexShrink: 1,
+    marginRight: 8,
+    color: theme.colors.onSurface,
+  },
+  streakText: {
+    fontSize: 16,
+    marginLeft: 6,
+    color: theme.colors.onSurface,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyImage: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+    opacity: 0.7,
+  },
+  emptyText: {
+    fontSize: 18,
+    textAlign: 'center',
+    color: theme.colors.onSurfaceVariant,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+  },
+});
+
 export default function HabitsScreen() {
   const theme = useTheme();
+  const styles = getStyles(theme);
+
   const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -56,7 +106,7 @@ export default function HabitsScreen() {
   const renderHabit = ({ item }: { item: Habit }) => {
     const completedToday = item.completions.includes(todayStr());
     return (
-      <Card style={[styles.card, { backgroundColor: theme.colors.elevation.level1 }]}> 
+      <Card style={[styles.card, { backgroundColor: theme.colors.elevation.level1 }]}>
         <Card.Title
           title={<Text style={styles.habitTitle}>{item.name}</Text>}
           subtitle={
@@ -91,6 +141,7 @@ export default function HabitsScreen() {
             onPress={() => handleCheckIn(item, completedToday)}
             icon={completedToday ? 'close' : 'check'}
             style={{ borderRadius: 20 }}
+            labelStyle={!completedToday ? { color: theme.colors.primary } : {}}
           >
             {completedToday ? 'Uncheck' : 'Check In'}
           </Button>
@@ -121,6 +172,7 @@ export default function HabitsScreen() {
         icon="plus"
         onPress={() => setShowAdd(true)}
         label="Add Habit"
+        color={theme.colors.onPrimary}
       />
       <Portal>
         {/* Add Dialog */}
@@ -188,66 +240,3 @@ export default function HabitsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    backgroundColor: '#f8f9fa',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    color: '#222',
-  },
-  card: {
-    borderRadius: 18,
-    elevation: 3,
-    marginHorizontal: 2,
-    marginBottom: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-  },
-  habitTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: 'white',
-  },
-  streakText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#ff9800',
-    marginLeft: 2,
-  },
-  fab: {
-    position: 'absolute',
-    right: 18,
-    bottom: 38,
-    borderRadius: 30,
-    elevation: 6,
-  },
-  emptyState: {
-    alignItems: 'center',
-    marginTop: 60,
-    paddingHorizontal: 24,
-  },
-  emptyImage: {
-    width: 120,
-    height: 120,
-    opacity: 0.7,
-    marginBottom: 24,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#888',
-    textAlign: 'center',
-    marginTop: 8,
-    fontWeight: '500',
-  },
-});

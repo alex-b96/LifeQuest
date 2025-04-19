@@ -1,11 +1,103 @@
 import React, { useEffect, useState } from 'react';
 import { View, StyleSheet, FlatList, ScrollView } from 'react-native';
-import { Text, Button, Card, IconButton, FAB, Portal, Dialog, TextInput, ProgressBar, useTheme, Checkbox } from 'react-native-paper';
+import { Text, Button, Card, IconButton, FAB, Portal, Dialog, TextInput, ProgressBar, useTheme, Checkbox, MD3Theme } from 'react-native-paper';
 import { goalService } from '../../services/goalService';
 import { Goal, GoalTask } from '../../models/Goal';
 
+const getStyles = (theme: MD3Theme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    backgroundColor: theme.colors.background,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    color: theme.colors.onSurface,
+  },
+  card: {
+    marginBottom: 16,
+    borderRadius: 12,
+  },
+  goalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.onSurface,
+  },
+  progressText: {
+    fontSize: 14,
+    color: theme.colors.onSurfaceVariant,
+  },
+  progressBar: {
+    marginTop: 8,
+    marginBottom: 16,
+    height: 8,
+    borderRadius: 4,
+  },
+  taskSection: {
+    marginTop: 8,
+  },
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: theme.colors.onSurfaceVariant,
+  },
+  noTasks: {
+    fontStyle: 'italic',
+    color: theme.colors.onSurfaceVariant,
+  },
+  taskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  taskText: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 16,
+    color: theme.colors.onSurface,
+  },
+  taskCompleted: {
+    textDecorationLine: 'line-through',
+    color: theme.colors.onSurfaceDisabled,
+  },
+  addTaskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  taskInput: {
+    flex: 1,
+    marginRight: 8,
+  },
+  addTaskBtn: {
+    height: 40,
+    justifyContent: 'center',
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 18,
+    color: theme.colors.onSurfaceVariant,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+  },
+});
+
 export default function GoalsScreen() {
   const theme = useTheme();
+  const styles = getStyles(theme);
+
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -70,7 +162,6 @@ export default function GoalsScreen() {
       completed: false,
     };
     const updatedGoal = { ...goal, tasks: [...goal.tasks, newTask] };
-    // Update progress
     const total = updatedGoal.tasks.length;
     const done = updatedGoal.tasks.filter(t => t.completed).length;
     updatedGoal.progress = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -85,7 +176,7 @@ export default function GoalsScreen() {
   }
 
   const renderGoal = ({ item }: { item: Goal }) => (
-    <Card style={[styles.card, { backgroundColor: theme.colors.elevation.level1 }]}> 
+    <Card style={[styles.card, { backgroundColor: theme.colors.elevation.level1 }]} > 
       <Card.Title
         title={<Text style={styles.goalTitle}>{item.name}</Text>}
         subtitle={<Text style={styles.progressText}>{item.progress}% complete</Text>}
@@ -186,6 +277,7 @@ export default function GoalsScreen() {
         icon="plus"
         onPress={() => setShowAdd(true)}
         label="Add Goal"
+        color={theme.colors.onPrimary}
       />
       <Portal>
         {/* Edit Task Dialog */}
@@ -229,7 +321,7 @@ export default function GoalsScreen() {
                   loadGoals();
                 }
               }}
-              color="red"
+              color={theme.colors.error}
             >Delete</Button>
           </Dialog.Actions>
         </Dialog>
@@ -280,106 +372,3 @@ export default function GoalsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    backgroundColor: '#f8f9fa',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-    letterSpacing: 0.5,
-    color: '#222',
-  },
-  card: {
-    borderRadius: 18,
-    elevation: 3,
-    marginHorizontal: 2,
-    marginBottom: 18,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-  },
-  goalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: 'white',
-  },
-  progressText: {
-    fontSize: 15,
-    color: '#888',
-    marginBottom: 4,
-  },
-  progressBar: {
-    height: 8,
-    borderRadius: 6,
-    marginVertical: 8,
-    backgroundColor: '#e0e0e0',
-  },
-  taskSection: {
-    marginTop: 10,
-  },
-  taskTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#555',
-  },
-  noTasks: {
-    color: '#aaa',
-    fontStyle: 'italic',
-    marginBottom: 4,
-  },
-  taskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 2,
-  },
-  taskText: {
-    fontSize: 15,
-    color: 'white',
-  },
-  taskCompleted: {
-    textDecorationLine: 'line-through',
-    color: '#aaa',
-  },
-  addTaskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  taskInput: {
-    flex: 1,
-    marginRight: 8,
-    minWidth: 80,
-  },
-  addTaskBtn: {
-    borderRadius: 20,
-    elevation: 2,
-  },
-  fab: {
-    position: 'absolute',
-    right: 18,
-    bottom: 38,
-    borderRadius: 30,
-    elevation: 6,
-  },
-  emptyState: {
-    alignItems: 'center',
-    marginTop: 60,
-    paddingHorizontal: 24,
-  },
-  emptyText: {
-    fontSize: 18,
-    color: '#888',
-    textAlign: 'center',
-    marginTop: 8,
-    fontWeight: '500',
-  },
-});
