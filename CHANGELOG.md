@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - YYYY-MM-DD (Current Date)
+
+### Added
+- Defined `Trait` data model (`models/Trait.ts`) including id, name, description, experiencePoints, level, lastUpdated.
+- Implemented state management for traits in `AppContext` (load, add, update, delete).
+- Added `getTraits` and `saveTraits` functions to `storageService.ts` for AsyncStorage persistence.
+- Built initial UI for `TraitsScreen` (`app/(tabs)/traits.tsx`) using `react-native-paper` components (`Card`, `FAB`, `Dialog`, `ProgressBar`).
+- Implemented full CRUD functionality for traits (Add, Edit, Delete) via dialogs on the `TraitsScreen`.
+- Added `KeyboardAvoidingView` and `ScrollView` to dialogs for better keyboard handling.
+- Displayed trait level, experience points (with progress bar), and last updated timestamp on trait cards.
+
+### Changed
+- Updated `AppContextProps` type definitions to match implemented functions.
+
+### Current State
+- Traits screen allows users to add, view, edit, and delete personal development traits.
+- Trait data is persisted locally using AsyncStorage.
+- Basic visualization of trait progress (level, XP) is in place.
+- Still need to link Goals/Habits completion to update trait experience points.
+
 ## [Unreleased] - 2025-04-18
 
 ### Added
@@ -17,9 +37,6 @@ All notable changes to this project will be documented in this file.
 ### Migration
 - Migrated publishing workflow from deprecated `expo publish` to new EAS Update system (`expo-updates`, `eas-cli`).
 - Updated instructions for publishing and project setup to follow Expo SDK 52+ best practices.
-
-### Fixed
-- Resolved issues with Expo Go not loading on iPhone by clarifying network and publishing setup.
 
 ### Current State
 - Goals and Habits pages are both fully functional with modern UI and local persistence.
@@ -44,13 +61,6 @@ All notable changes to this project will be documented in this file.
 - Updated root layout (`app/_layout.tsx`) to use `Stack` navigator for managing `(tabs)` and `(auth)` groups and wrap app in `AppProvider` & `PaperProvider`.
 - Updated `app/index.tsx` to redirect to `/dashboard`.
 - Updated `Dashboard` and `Traits` screens to consume state (`user`, `traits`) from `useAppContext`.
-
-### Fixed
-- Resolved initial "Cannot use JSX unless '--jsx' flag is provided" error.
-- Resolved build error "Unable to resolve './App' from 'index.ts'" after switching to Expo Router.
-- Resolved "Unmatched Route" error by adding `app/index.tsx` redirect.
-- Fixed lint errors in `Dashboard` and `Traits` screens related to context usage and `FlatList` props.
-- Corrected root navigation issue where route group names were appearing as buttons.
 
 ### Removed
 - Deleted the initial `App.tsx` file.
