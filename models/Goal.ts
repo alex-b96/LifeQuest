@@ -1,17 +1,20 @@
+export interface GoalTask {
+  id: string;
+  name: string;
+  completed: boolean;
+  traitId?: string; // Optional trait link
+  xpValue?: number; // Optional XP value for completing the task
+}
+
 export interface Goal {
   id: string;
   name: string;
   description?: string;
-  traitId?: string; // Optional: link to a trait
   status: 'active' | 'completed' | 'archived';
   createdAt: string;
   dueDate?: string;
   progress: number; // 0-100
   tasks: GoalTask[];
-}
-
-export interface GoalTask {
-  id: string;
-  name: string;
-  completed: boolean;
+  xpValue?: number; // Optional XP value for completing the GOAL
+  traitId?: string; // Optional trait link for the GOAL
 }
