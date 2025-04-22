@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, Image, KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
-import { Text, Button, Card, IconButton, FAB, Portal, Dialog, TextInput, useTheme, Avatar, MD3Theme } from 'react-native-paper';
-import { Picker } from '@react-native-picker/picker'; 
+import { Text, FAB, Portal, Dialog, TextInput, useTheme, MD3Theme, Button } from 'react-native-paper';
+import { Picker } from '@react-native-picker/picker';
 import { Habit } from '../../models/Habit';
 import { useAppContext } from '../../contexts/AppContext';
+import { HabitCard } from '../../components/habits/HabitCard';
 
 const todayStr = () => new Date().toISOString().split('T')[0];
 
@@ -13,27 +14,6 @@ const getStyles = (theme: MD3Theme) => StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 8,
     backgroundColor: theme.colors.background,
-  },
-  card: {
-    marginBottom: 12,
-    borderRadius: 8,
-  },
-  habitTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flexShrink: 1,
-    marginRight: 8,
-    color: theme.colors.onSurface,
-  },
-  streakText: {
-    fontSize: 16,
-    marginLeft: 6,
-    color: theme.colors.onSurface,
-  },
-  xpText: { 
-    fontSize: 12, 
-    color: theme.colors.primary,
-    marginLeft: 8, 
   },
   emptyState: {
     flex: 1,
@@ -57,57 +37,99 @@ const getStyles = (theme: MD3Theme) => StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
+    backgroundColor: theme.colors.primary,
   },
-  pickerContainer: { 
+  pickerContainer: {
     borderWidth: 1,
     borderColor: theme.colors.outline,
     borderRadius: 4,
     marginTop: 8,
-    marginBottom: 8,
+    marginBottom: 16,
+    backgroundColor: theme.colors.surface,
   },
-  picker: { 
+  picker: {
   },
-  textInput: { 
-    marginTop: 8,
-  }
+  textInput: {
+    marginBottom: 16,
+  },
+  dialog: {
+    borderRadius: 8,
+  },
+  dialogTitle: {
+  },
+  dialogContent: {
+    paddingBottom: 0,
+  },
+  keyboardAvoidingView: {
+    width: '100%',
+  },
+  scrollViewContent: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 20,
+    flexGrow: 1,
+  },
+  deleteDialogText: {
+    fontSize: 16,
+    color: theme.colors.onSurfaceVariant,
+    lineHeight: 24,
+  },
+  listContent: {
+    paddingBottom: 80,
+    paddingTop: 8
+  },
 });
 
 export default function HabitsScreen() {
   const theme = useTheme();
   const styles = getStyles(theme);
-  const { habits, traits, addHabit, updateHabit, deleteHabit, completeHabit } = useAppContext(); 
+  const { habits, traits, addHabit, updateHabit, deleteHabit, completeHabit } = useAppContext();
 
-  const [showAdd, setShowAdd] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
-  const [newHabitTraitId, setNewHabitTraitId] = useState<string | undefined>(undefined); 
-  const [newHabitXpValue, setNewHabitXpValue] = useState<string>('10'); 
+  const [newHabitTraitId, setNewHabitTraitId] = useState<string | undefined>(undefined);
+  const [newHabitXpValue, setNewHabitXpValue] = useState<string>('10');
 
-  const [editHabit, setEditHabit] = useState<Habit | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [editName, setEditName] = useState('');
-  const [editTraitId, setEditTraitId] = useState<string | undefined>(undefined); 
-  const [editXpValue, setEditXpValue] = useState<string>(''); 
+  const [editTraitId, setEditTraitId] = useState<string | undefined>(undefined);
+  const [editXpValue, setEditXpValue] = useState<string>('');
 
-  const [deleteHabitId, setDeleteHabitId] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingHabit, setDeletingHabit] = useState<Habit | null>(null);
+
+  const openAddDialog = () => {
+    setNewHabitName('');
+    setNewHabitTraitId(traits.length > 0 ? traits[0].id : undefined);
+    setNewHabitXpValue('10');
+    setShowAddDialog(true);
+  };
+  const closeAddDialog = () => setShowAddDialog(false);
+
+  const openEditDialog = (habit: Habit) => {
+    setEditingHabit(habit);
+    setEditName(habit.name);
+    setEditTraitId(habit.traitId);
+    setEditXpValue(habit.xpValue?.toString() ?? '');
+    setShowEditDialog(true);
+  };
+  const closeEditDialog = () => {
+    setShowEditDialog(false);
+    setEditingHabit(null);
+  };
+
+  const openDeleteDialog = (habit: Habit) => {
+    setDeletingHabit(habit);
+    setShowDeleteDialog(true);
+  };
+  const closeDeleteDialog = () => {
+    setShowDeleteDialog(false);
+    setDeletingHabit(null);
+  };
 
   async function handleCheckIn(habit: Habit) {
-    const today = todayStr();
-    const completedToday = habit.completions?.includes(today);
-
-    if (completedToday) {
-      const updatedCompletions = habit.completions?.filter(date => date !== today) ?? [];
-      const updatedStreak = habit.lastCompleted === today ? Math.max(0, (habit.streak ?? 0) - 1) : habit.streak;
-      const newLastCompleted = updatedCompletions.length > 0 ? [...updatedCompletions].sort().pop() : null;
-      await updateHabit({ 
-        ...habit, 
-        completions: updatedCompletions,
-        streak: updatedStreak,
-        lastCompleted: newLastCompleted ?? null
-      });
-    } else {
-      // Complete: Use context function which handles XP and streak updates
-      // Pass only habitId and date, as context function fetches habit details
-      await completeHabit(habit.id, today);
-    }
+    await completeHabit(habit.id, todayStr());
   }
 
   async function handleAddHabit() {
@@ -115,90 +137,47 @@ export default function HabitsScreen() {
     const xpValue = parseInt(newHabitXpValue, 10);
     const finalXpValue = !isNaN(xpValue) && newHabitXpValue.trim() !== '' ? xpValue : undefined;
 
-    await addHabit({ 
-        name: newHabitName.trim(), 
+    await addHabit({
+        name: newHabitName.trim(),
         frequency: 'daily',
-        traitId: newHabitTraitId, 
-        xpValue: finalXpValue 
-    }); 
-    setNewHabitName('');
-    setNewHabitTraitId(undefined);
-    setNewHabitXpValue('10');
-    setShowAdd(false);
+        traitId: newHabitTraitId,
+        xpValue: finalXpValue
+    });
+    closeAddDialog();
   }
 
   async function handleEditHabitSave() {
-    if (editHabit && editName.trim()) {
+    if (editingHabit && editName.trim()) {
       const xpValue = parseInt(editXpValue, 10);
       const finalXpValue = !isNaN(xpValue) && editXpValue.trim() !== '' ? xpValue : undefined;
 
-      await updateHabit({ 
-        ...editHabit, 
+      await updateHabit({
+        ...editingHabit,
         name: editName.trim(),
-        traitId: editTraitId, 
-        xpValue: finalXpValue 
+        traitId: editTraitId,
+        xpValue: finalXpValue
       });
-      setEditHabit(null);
-      setEditName('');
-      setEditTraitId(undefined);
-      setEditXpValue('');
+      closeEditDialog();
     }
   }
 
   async function handleDeleteHabitConfirm() {
-    if (deleteHabitId) {
-      await deleteHabit(deleteHabitId);
-      setDeleteHabitId(null);
+    if (deletingHabit) {
+      await deleteHabit(deletingHabit.id);
+      closeDeleteDialog();
     }
   }
 
-  const renderHabit = ({ item }: { item: Habit }) => {
-    const completedToday = item.completions?.includes(todayStr()); 
+  const renderItem = ({ item }: { item: Habit }) => {
+    const completedToday = item.completions?.includes(todayStr());
     return (
-      <Card style={[styles.card, { backgroundColor: theme.colors.elevation.level1 }]}>
-        <Card.Title
-          title={<Text style={styles.habitTitle}>{item.name}</Text>}
-          subtitle={
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Avatar.Icon size={24} icon="fire" color={theme.colors.onPrimary} style={{ backgroundColor: theme.colors.primary, marginRight: 6 }} />
-              <Text style={styles.streakText}>{item.streak ?? 0} day streak</Text> 
-              {item.xpValue ? <Text style={styles.xpText}>(+{item.xpValue} XP)</Text> : null}
-            </View>
-          }
-          right={(props) => (
-            <View style={{ flexDirection: 'row' }}>
-              <IconButton
-                {...props}
-                icon="pencil"
-                onPress={() => {
-                  setEditHabit(item); 
-                  setEditName(item.name); 
-                  setEditTraitId(item.traitId); 
-                  setEditXpValue(item.xpValue?.toString() ?? ''); 
-                }}
-                accessibilityLabel="Edit Habit"
-              />
-              <IconButton
-                {...props}
-                icon="delete"
-                onPress={() => setDeleteHabitId(item.id)}
-                accessibilityLabel="Delete Habit"
-              />
-            </View>
-          )}
-        />
-        <Card.Actions>
-          <Button
-            mode={completedToday ? 'contained' : 'outlined'}
-            onPress={() => handleCheckIn(item)} 
-            icon={'check'} 
-            style={{ borderRadius: 20 }}
-            labelStyle={!completedToday ? { color: theme.colors.primary } : {}}
-          >
-            {completedToday ? 'Completed' : 'Check In'}
-          </Button>
-        </Card.Actions>
-      </Card>
+      <HabitCard
+        habit={item}
+        completedToday={completedToday ?? false}
+        onCheckIn={handleCheckIn}
+        onEdit={openEditDialog}
+        onDelete={openDeleteDialog}
+      />
     );
   };
 
@@ -211,126 +190,120 @@ export default function HabitsScreen() {
         </View>
       ) : (
         <FlatList
-          data={habits} 
-          renderItem={renderHabit}
+          data={habits}
+          renderItem={renderItem}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ paddingBottom: 120, paddingTop: 8 }}
+          contentContainerStyle={styles.listContent}
         />
       )}
       <FAB
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]} 
+        style={styles.fab}
         icon="plus"
-        onPress={() => {
-          setNewHabitName('');
-          setNewHabitTraitId(undefined);
-          setNewHabitXpValue('10');
-          setShowAdd(true);
-        }}
+        onPress={openAddDialog}
         label="Add Habit"
         color={theme.colors.onPrimary}
+        accessibilityLabel="Add New Habit"
       />
       <Portal>
-        {/* Add Habit Dialog */}
-        <Dialog visible={showAdd} onDismiss={() => setShowAdd(false)}>
-          <Dialog.Title>Add New Habit</Dialog.Title>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0} // Adjust offset as needed
-          >
-            <ScrollView>
-              <Dialog.Content style={{ paddingBottom: 50 }}>
-                <TextInput
-                  label="Habit Name"
-                  value={newHabitName}
-                  onChangeText={setNewHabitName}
-                  mode="outlined"
-                  style={styles.textInput}
-                />
-                <View style={styles.pickerContainer}>
-                   <Picker
-                    selectedValue={newHabitTraitId}
-                    onValueChange={(itemValue) => setNewHabitTraitId(itemValue || undefined)}
-                    style={styles.picker}
-                  >
-                    <Picker.Item label="Link to Trait (Optional)" value={undefined} />
-                    {traits.map(trait => (
-                      <Picker.Item key={trait.id} label={trait.name} value={trait.id} />
-                    ))}
-                  </Picker>
-                </View>
-                <TextInput
-                  label="XP Value (Optional)"
-                  value={newHabitXpValue}
-                  onChangeText={setNewHabitXpValue}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  style={styles.textInput}
-                />
-              </Dialog.Content>
-            </ScrollView>
-          </KeyboardAvoidingView>
-          <Dialog.Actions>
-            <Button onPress={() => setShowAdd(false)}>Cancel</Button>
-            <Button onPress={handleAddHabit}>Add</Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        {/* Edit Habit Dialog */}
-        <Dialog visible={!!editHabit} onDismiss={() => setEditHabit(null)}>
-          <Dialog.Title>Edit Habit</Dialog.Title>
+        <Dialog visible={showAddDialog} onDismiss={closeAddDialog} style={styles.dialog}>
            <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0} // Adjust offset as needed
-          >
-            <ScrollView>
-              <Dialog.Content style={{ paddingBottom: 50 }}>
-                <TextInput
-                  label="Habit Name"
-                  value={editName}
-                  onChangeText={setEditName}
-                  mode="outlined"
-                  style={styles.textInput}
-                />
+             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+             style={styles.keyboardAvoidingView}
+             keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+           >
+             <Dialog.Title style={styles.dialogTitle}>Add New Habit</Dialog.Title>
+             <ScrollView contentContainerStyle={styles.scrollViewContent}>
+              <Dialog.Content style={styles.dialogContent}>
+                 <TextInput
+                   label="Habit Name"
+                   value={newHabitName}
+                   onChangeText={setNewHabitName}
+                   mode="outlined"
+                   style={styles.textInput}
+                 />
                  <View style={styles.pickerContainer}>
                    <Picker
-                    selectedValue={editTraitId}
-                    onValueChange={(itemValue) => setEditTraitId(itemValue || undefined)}
-                    style={styles.picker}
-                  >
-                    <Picker.Item label="Link to Trait (Optional)" value={undefined} />
-                    {traits.map(trait => (
-                      <Picker.Item key={trait.id} label={trait.name} value={trait.id} />
-                    ))}
-                  </Picker>
-                </View>
-                <TextInput
-                  label="XP Value (Optional)"
-                  value={editXpValue}
-                  onChangeText={setEditXpValue}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  style={styles.textInput}
-                />
-              </Dialog.Content>
-            </ScrollView>
-          </KeyboardAvoidingView>
+                      selectedValue={newHabitTraitId}
+                      onValueChange={(itemValue) => setNewHabitTraitId(itemValue || undefined)}
+                      style={styles.picker}
+                      prompt="Link to Trait (Optional)"
+                    >
+                      <Picker.Item label="No Linked Trait" value={undefined} />
+                      {traits.map((trait) => (
+                        <Picker.Item key={trait.id} label={trait.name} value={trait.id} />
+                      ))}
+                    </Picker>
+                 </View>
+                 <TextInput
+                      label="XP Value (Optional)"
+                      value={newHabitXpValue}
+                      onChangeText={setNewHabitXpValue}
+                      mode="outlined"
+                      style={styles.textInput}
+                      keyboardType="numeric"
+                 />
+               </Dialog.Content>
+             </ScrollView>
+             <Dialog.Actions>
+               <Button onPress={closeAddDialog}>Cancel</Button>
+               <Button onPress={handleAddHabit} disabled={!newHabitName.trim()} mode="contained">Add</Button>
+             </Dialog.Actions>
+           </KeyboardAvoidingView>
+        </Dialog>
+
+        <Dialog visible={showEditDialog} onDismiss={closeEditDialog} style={styles.dialog}>
+           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoidingView} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
+            <Dialog.Title style={styles.dialogTitle}>Edit Habit</Dialog.Title>
+             <ScrollView contentContainerStyle={styles.scrollViewContent}>
+               <Dialog.Content style={styles.dialogContent}>
+                 <TextInput
+                   label="Habit Name"
+                   value={editName}
+                   onChangeText={setEditName}
+                   mode="outlined"
+                   style={styles.textInput}
+                 />
+                 <View style={styles.pickerContainer}>
+                   <Picker
+                      selectedValue={editTraitId}
+                      onValueChange={(itemValue) => setEditTraitId(itemValue || undefined)}
+                      style={styles.picker}
+                      prompt="Link to Trait (Optional)"
+                    >
+                      <Picker.Item label="No Linked Trait" value={undefined} />
+                      {traits.map((trait) => (
+                        <Picker.Item key={trait.id} label={trait.name} value={trait.id} />
+                      ))}
+                    </Picker>
+                 </View>
+                 <TextInput
+                      label="XP Value (Optional)"
+                      value={editXpValue}
+                      onChangeText={setEditXpValue}
+                      mode="outlined"
+                      style={styles.textInput}
+                      keyboardType="numeric"
+                 />
+               </Dialog.Content>
+             </ScrollView>
+             <Dialog.Actions>
+               <Button onPress={closeEditDialog}>Cancel</Button>
+               <Button onPress={handleEditHabitSave} disabled={!editName.trim()} mode="contained">Save Changes</Button>
+             </Dialog.Actions>
+           </KeyboardAvoidingView>
+        </Dialog>
+
+        <Dialog visible={showDeleteDialog} onDismiss={closeDeleteDialog} style={styles.dialog}>
+          <Dialog.Title>Confirm Deletion</Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.deleteDialogText}>Are you sure you want to delete the habit "{deletingHabit?.name}"? This action cannot be undone.</Text>
+          </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setEditHabit(null)}>Cancel</Button>
-            <Button onPress={handleEditHabitSave}>Save</Button>
+            <Button onPress={closeDeleteDialog}>Cancel</Button>
+            <Button onPress={handleDeleteHabitConfirm} textColor={theme.colors.error}>Delete</Button>
           </Dialog.Actions>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <Dialog visible={!!deleteHabitId} onDismiss={() => setDeleteHabitId(null)}>
-          <Dialog.Title>Delete Habit</Dialog.Title>
-          <Dialog.Content>
-            <Text>Are you sure you want to delete this habit?</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDeleteHabitId(null)}>Cancel</Button>
-            <Button onPress={handleDeleteHabitConfirm} color={theme.colors.error}>Delete</Button>
-          </Dialog.Actions>
-        </Dialog>
       </Portal>
     </View>
   );

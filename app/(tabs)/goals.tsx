@@ -1,90 +1,35 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, FlatList, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
-import { Text, Button, Card, IconButton, FAB, Portal, Dialog, TextInput, ProgressBar, useTheme, MD3Theme, Checkbox, Menu, Divider } from 'react-native-paper';
+import { View, StyleSheet, FlatList, ScrollView, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { Text, Button, FAB, Portal, Dialog, TextInput, useTheme, MD3Theme } from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import { Goal, GoalTask } from '../../models/Goal';
 import { useAppContext } from '../../contexts/AppContext';
+import { GoalCard } from '../../components/goals/GoalCard';
 
 const getStyles = (theme: MD3Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 8,
     backgroundColor: theme.colors.background,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: theme.colors.onSurface,
-  },
-  card: {
-    marginBottom: 16,
-    borderRadius: 12,
-  },
-  goalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: theme.colors.onSurface,
-  },
-  progressText: {
-    fontSize: 14,
-    color: theme.colors.onSurfaceVariant,
-  },
-  progressBar: {
-    marginTop: 8,
-    marginBottom: 16,
-    height: 8,
-    borderRadius: 4,
-  },
-  taskSection: {
-    marginTop: 8,
-  },
-  taskTitle: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 8,
-    color: theme.colors.onSurfaceVariant,
-  },
-  noTasks: {
-    fontStyle: 'italic',
-    color: theme.colors.onSurfaceVariant,
-  },
-  taskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  taskText: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 16,
-    color: theme.colors.onSurface,
-  },
-  taskCompleted: {
-    textDecorationLine: 'line-through',
-    color: theme.colors.onSurfaceDisabled,
-  },
-  addTaskRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  taskInput: {
-    flex: 1,
-    marginRight: 8,
-  },
-  addTaskBtn: {
-    height: 40,
-    justifyContent: 'center',
+  listContent: {
+    padding: 16,
+    paddingBottom: 80,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  emptyImage: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+    opacity: 0.7,
   },
   emptyText: {
     fontSize: 18,
+    textAlign: 'center',
     color: theme.colors.onSurfaceVariant,
   },
   fab: {
@@ -92,51 +37,133 @@ const getStyles = (theme: MD3Theme) => StyleSheet.create({
     margin: 16,
     right: 0,
     bottom: 0,
+    backgroundColor: theme.colors.primary,
   },
   pickerContainer: {
     borderWidth: 1,
     borderColor: theme.colors.outline,
     borderRadius: 4,
     marginTop: 8,
-    marginBottom: 8,
+    marginBottom: 16,
+    backgroundColor: theme.colors.surface,
   },
   picker: {
-    // Height adjustments might be needed depending on platform
   },
   textInput: {
-    // Add this style for text input
-  }
+    marginBottom: 16,
+  },
+  dialog: {
+    borderRadius: 8,
+  },
+  dialogTitle: {
+  },
+  dialogContent: {
+    paddingBottom: 0,
+  },
+  keyboardAvoidingView: {
+    width: '100%',
+  },
+  scrollViewContent: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 20,
+    flexGrow: 1,
+  },
+  deleteDialogText: {
+    fontSize: 16,
+    color: theme.colors.onSurfaceVariant,
+    lineHeight: 24,
+  },
 });
 
 export default function GoalsScreen() {
   const theme = useTheme();
   const styles = getStyles(theme);
 
-  const { 
-    goals, 
-    traits, 
-    addGoal, 
-    updateGoal, 
-    deleteGoal, 
-    updateGoalTask 
+  const {
+    goals,
+    traits,
+    addGoal,
+    updateGoal,
+    deleteGoal,
+    updateGoalTask,
   } = useAppContext();
 
-  const [showAddGoal, setShowAddGoal] = useState(false);
+  const [showAddGoalDialog, setShowAddGoalDialog] = useState(false);
+  const [showEditGoalDialog, setShowEditGoalDialog] = useState(false);
+  const [showDeleteGoalDialog, setShowDeleteGoalDialog] = useState(false);
+  const [showEditTaskDialog, setShowEditTaskDialog] = useState(false);
+  const [showDeleteTaskDialog, setShowDeleteTaskDialog] = useState(false);
+
   const [newGoalName, setNewGoalName] = useState('');
   const [newGoalTraitId, setNewGoalTraitId] = useState<string | undefined>(undefined);
-  const [newGoalXpValue, setNewGoalXpValue] = useState<string>('10');
+  const [newGoalXpValue, setNewGoalXpValue] = useState<string>('50');
 
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [editGoalName, setEditGoalName] = useState('');
   const [editGoalTraitId, setEditGoalTraitId] = useState<string | undefined>(undefined);
   const [editGoalXpValue, setEditGoalXpValue] = useState<string>('');
 
-  const [deleteGoalId, setDeleteGoalId] = useState<string | null>(null);
-  const [taskInput, setTaskInput] = useState<{ [key: string]: string }>({});
-  const [editTask, setEditTask] = useState<{goalId: string, task: GoalTask} | null>(null);
+  const [deletingGoal, setDeletingGoal] = useState<Goal | null>(null);
+
+  const [editingTaskInfo, setEditingTaskInfo] = useState<{goalId: string, task: GoalTask} | null>(null);
   const [editTaskName, setEditTaskName] = useState('');
-  const [editTaskXpValue, setEditTaskXpValue] = useState('');
-  const [deleteTask, setDeleteTask] = useState<{goalId: string, taskId: string} | null>(null);
+  const [editTaskXpValue, setEditTaskXpValue] = useState<string>('10');
+
+  const [deletingTaskInfo, setDeletingTaskInfo] = useState<{goalId: string, taskId: string, taskName: string} | null>(null);
+
+  const openAddGoalDialog = () => {
+    setNewGoalName('');
+    setNewGoalTraitId(traits.length > 0 ? traits[0].id : undefined);
+    setNewGoalXpValue('50');
+    setShowAddGoalDialog(true);
+  };
+  const closeAddGoalDialog = () => setShowAddGoalDialog(false);
+
+  const openEditGoalDialog = (goal: Goal) => {
+    setEditingGoal(goal);
+    setEditGoalName(goal.name);
+    setEditGoalTraitId(goal.traitId);
+    setEditGoalXpValue(goal.xpValue?.toString() ?? '');
+    setShowEditGoalDialog(true);
+  };
+  const closeEditGoalDialog = () => {
+    setShowEditGoalDialog(false);
+    setEditingGoal(null);
+  };
+
+  const openDeleteGoalDialog = (goal: Goal) => {
+    setDeletingGoal(goal);
+    setShowDeleteGoalDialog(true);
+  };
+  const closeDeleteGoalDialog = () => {
+    setShowDeleteGoalDialog(false);
+    setDeletingGoal(null);
+  };
+
+  const openEditTaskDialog = (goalId: string, task: GoalTask) => {
+    setEditingTaskInfo({ goalId, task });
+    setEditTaskName(task.name);
+    setEditTaskXpValue(task.xpValue?.toString() ?? '10');
+    setShowEditTaskDialog(true);
+  };
+  const closeEditTaskDialog = () => {
+    setShowEditTaskDialog(false);
+    setEditingTaskInfo(null);
+  };
+
+  const openDeleteTaskDialog = (goalId: string, taskId: string) => {
+    const goal = goals.find(g => g.id === goalId);
+    const task = goal?.tasks.find(t => t.id === taskId);
+    if (task) {
+      setDeletingTaskInfo({ goalId, taskId, taskName: task.name });
+      setShowDeleteTaskDialog(true);
+    }
+  };
+  const closeDeleteTaskDialog = () => {
+    setShowDeleteTaskDialog(false);
+    setDeletingTaskInfo(null);
+  };
 
   async function handleAddGoal() {
     if (!newGoalName.trim()) return;
@@ -145,14 +172,11 @@ export default function GoalsScreen() {
 
     await addGoal({
       name: newGoalName.trim(),
-      status: 'active', // Added missing status property for type compatibility
-      traitId: newGoalTraitId, // Add traitId
-      xpValue: finalXpValue // Add parsed xpValue
+      status: 'active',
+      traitId: newGoalTraitId,
+      xpValue: finalXpValue,
     });
-    setNewGoalName('');
-    setNewGoalTraitId(undefined);
-    setNewGoalXpValue('10');
-    setShowAddGoal(false);
+    closeAddGoalDialog();
   }
 
   async function handleEditGoalSave() {
@@ -160,341 +184,209 @@ export default function GoalsScreen() {
     const xpValue = parseInt(editGoalXpValue, 10);
     const finalXpValue = !isNaN(xpValue) && editGoalXpValue.trim() !== '' ? xpValue : undefined;
 
-    await updateGoal({ 
-        ...editingGoal, 
-        name: editGoalName.trim(),
-        traitId: editGoalTraitId,
-        xpValue: finalXpValue
+    await updateGoal({
+      ...editingGoal,
+      name: editGoalName.trim(),
+      traitId: editGoalTraitId,
+      xpValue: finalXpValue,
     });
-    setEditingGoal(null);
-    setEditGoalName('');
-    setEditGoalTraitId(undefined);
-    setEditGoalXpValue('');
+    closeEditGoalDialog();
   }
 
-  async function handleDeleteGoal() {
-    if (deleteGoalId) {
-      await deleteGoal(deleteGoalId);
-      setDeleteGoalId(null);
+  async function handleDeleteGoalConfirm() {
+    if (deletingGoal) {
+      await deleteGoal(deletingGoal.id);
+      closeDeleteGoalDialog();
     }
   }
 
-  async function handleAddTask(goalId: string) {
-    const currentInput = taskInput[goalId] || '';
-    if (!currentInput.trim()) return;
-    
+  async function handleAddTask(goalId: string, taskName: string) {
     const goal = goals.find(g => g.id === goalId);
-    if (!goal) return;
+    if (!goal || !taskName.trim()) return;
 
     const newTask: GoalTask = {
-      id: Date.now().toString(), 
-      name: currentInput.trim(),
+      id: Date.now().toString(),
+      name: taskName.trim(),
       completed: false,
-      xpValue: 10
+      xpValue: 10,
     };
-    
-    const updatedGoal = { ...goal, tasks: [...goal.tasks, newTask] };
-    const total = updatedGoal.tasks.length;
-    const done = updatedGoal.tasks.filter(t => t.completed).length;
-    updatedGoal.progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    await updateGoal(updatedGoal); 
-    setTaskInput({ ...taskInput, [goalId]: '' }); 
+    const updatedTasks = [...goal.tasks, newTask];
+    const total = updatedTasks.length;
+    const done = updatedTasks.filter(t => t.completed).length;
+    const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    await updateGoal({ ...goal, tasks: updatedTasks, progress });
   }
 
   async function handleToggleTask(goalId: string, taskId: string) {
+    // Find the goal and task to determine the new completed status
     const goal = goals.find(g => g.id === goalId);
     const task = goal?.tasks.find(t => t.id === taskId);
-    if (!goal || !task) return;
-    await updateGoalTask(goalId, taskId, !task.completed);
-  }
 
-  function handleEditTask(goalId: string, task: GoalTask) {
-    setEditTask({ goalId, task });
-    setEditTaskName(task.name);
-    setEditTaskXpValue(task.xpValue?.toString() ?? '');
+    // If goal and task exist, call updateGoalTask with the toggled status
+    if (goal && task) {
+      await updateGoalTask(goalId, taskId, !task.completed);
+    } else {
+        console.warn("Could not find goal or task to toggle"); // Optional: Add a warning if not found
+    }
   }
 
   async function handleEditTaskSave() {
-    if (!editTask || !editTaskName.trim()) return;
+    if (!editingTaskInfo || !editTaskName.trim()) return;
 
-    const { goalId, task } = editTask;
+    const { goalId, task } = editingTaskInfo;
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
 
     const xpValue = parseInt(editTaskXpValue, 10);
-    const finalXpValue = !isNaN(xpValue) && editTaskXpValue.trim() !== '' ? xpValue : undefined;
+    const finalTaskXpValue = !isNaN(xpValue) && editTaskXpValue.trim() !== '' ? xpValue : undefined;
 
-    const updatedTasks = goal.tasks.map(t => 
-      t.id === task.id ? { 
-        ...t, 
-        name: editTaskName.trim(),
-        xpValue: finalXpValue
-      } : t
+    const updatedTasks = goal.tasks.map(t =>
+      t.id === task.id ? { ...t, name: editTaskName.trim(), xpValue: finalTaskXpValue } : t
     );
-    const updatedGoal = { ...goal, tasks: updatedTasks };
 
-    await updateGoal(updatedGoal); 
+    await updateGoal({ ...goal, tasks: updatedTasks });
 
-    setEditTask(null);
-    setEditTaskName('');
-    setEditTaskXpValue('');
+    closeEditTaskDialog();
   }
 
-  async function handleDeleteTask() {
-    if (!deleteTask) return;
-    const { goalId, taskId } = deleteTask;
+  async function handleDeleteTaskConfirm() {
+    if (!deletingTaskInfo) return;
+    const { goalId, taskId } = deletingTaskInfo;
 
     const goal = goals.find(g => g.id === goalId);
     if (!goal) return;
 
     const updatedTasks = goal.tasks.filter(t => t.id !== taskId);
-    const updatedGoal = { ...goal, tasks: updatedTasks };
+    const total = updatedTasks.length;
+    const done = updatedTasks.filter(t => t.completed).length;
+    const progress = total > 0 ? Math.round((done / total) * 100) : 0;
 
-    const total = updatedGoal.tasks.length;
-    const done = updatedGoal.tasks.filter(t => t.completed).length;
-    updatedGoal.progress = total > 0 ? Math.round((done / total) * 100) : 0;
+    await updateGoal({ ...goal, tasks: updatedTasks, progress });
 
-    await updateGoal(updatedGoal); 
-
-    setDeleteTask(null);
+    closeDeleteTaskDialog();
   }
 
-  const renderGoal = ({ item }: { item: Goal }) => (
-    <Card style={[styles.card, { backgroundColor: theme.colors.elevation.level1 }]} > 
-      <Card.Title
-        title={<Text style={styles.goalTitle}>{item.name}</Text>}
-        subtitle={<Text style={styles.progressText}>{item.progress}% complete</Text>}
-        right={(props) => (
-          <View style={{ flexDirection: 'row' }}>
-            <IconButton
-              {...props}
-              icon="pencil"
-              onPress={() => {
-                setEditingGoal(item);
-                setEditGoalName(item.name);
-                setEditGoalTraitId(item.traitId);
-                setEditGoalXpValue(item.xpValue?.toString() ?? '');
-              }}
-              accessibilityLabel="Edit Goal"
-            />
-            <IconButton
-              {...props}
-              icon="delete"
-              onPress={() => setDeleteGoalId(item.id)}
-              accessibilityLabel="Delete Goal"
-            />
-          </View>
-        )}
-      />
-      <Card.Content>
-        <ProgressBar progress={item.progress / 100} color={theme.colors.primary} style={styles.progressBar} />
-        <Text style={styles.taskTitle}>Tasks:</Text>
-        {item.tasks.length === 0 ? (
-          <Text style={styles.noTasks}>No tasks added yet.</Text>
-        ) : (
-          item.tasks.map((task) => (
-            <View key={task.id} style={styles.taskRow}>
-              <Checkbox
-                status={task.completed ? 'checked' : 'unchecked'}
-                onPress={() => handleToggleTask(item.id, task.id)} 
-              />
-              <Text 
-                style={[styles.taskText, task.completed && styles.taskCompleted]}
-                onPress={() => handleToggleTask(item.id, task.id)} 
-              >
-                {task.name}
-                {task.xpValue ? <Text style={{fontSize: 12, color: theme.colors.primary}}> (+{task.xpValue} XP)</Text> : ''}
-              </Text>
-              <IconButton icon="pencil" size={20} onPress={() => handleEditTask(item.id, task)} />
-              <IconButton icon="delete" size={20} onPress={() => setDeleteTask({ goalId: item.id, taskId: task.id })} />
-            </View>
-          ))
-        )}
-        <View style={styles.addTaskRow}>
-          <TextInput
-            label="New Task"
-            value={taskInput[item.id] || ''} 
-            onChangeText={(text) => setTaskInput({ ...taskInput, [item.id]: text })}
-            style={styles.taskInput}
-            mode="outlined"
-            dense
-          />
-          <Button 
-            mode="contained" 
-            onPress={() => handleAddTask(item.id)} 
-            style={styles.addTaskBtn}
-            icon="plus"
-            disabled={!taskInput[item.id]?.trim()} 
-          >
-            Add
-          </Button>
-        </View>
-      </Card.Content>
-    </Card>
+  const renderItem = ({ item }: { item: Goal }) => (
+    <GoalCard
+      goal={item}
+      onEditGoal={openEditGoalDialog}
+      onDeleteGoal={openDeleteGoalDialog}
+      onAddTask={handleAddTask}
+      onToggleTask={handleToggleTask}
+      onEditTask={openEditTaskDialog}
+      onDeleteTask={openDeleteTaskDialog}
+    />
   );
 
   return (
     <View style={styles.container}>
       {goals.length === 0 ? (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No goals yet. Add one!</Text>
+          <Image source={require('../../assets/images/logo.png')} style={styles.emptyImage} resizeMode="contain" />
+          <Text style={styles.emptyText}>No goals defined yet. Let's set some targets!</Text>
         </View>
       ) : (
         <FlatList
           data={goals}
-          renderItem={renderGoal}
+          renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingBottom: 80 }} 
+          contentContainerStyle={styles.listContent}
         />
       )}
 
       <Portal>
-        <Dialog visible={showAddGoal} onDismiss={() => setShowAddGoal(false)}>
-          <Dialog.Title>Add New Goal</Dialog.Title>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0} // Adjust offset as needed
-          >
-            <ScrollView>
-              <Dialog.Content style={{ paddingBottom: 50 }}>
-                <TextInput
-                  label="Goal Name"
-                  value={newGoalName}
-                  onChangeText={setNewGoalName}
-                  mode="outlined"
-                  style={styles.textInput} // Ensure this style exists or add margin
-                />
+        <Dialog visible={showAddGoalDialog} onDismiss={closeAddGoalDialog} style={styles.dialog}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoidingView} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
+            <Dialog.Title style={styles.dialogTitle}>Add New Goal</Dialog.Title>
+            <ScrollView contentContainerStyle={styles.scrollViewContent}>
+              <Dialog.Content style={styles.dialogContent}>
+                <TextInput label="Goal Name" value={newGoalName} onChangeText={setNewGoalName} mode="outlined" style={styles.textInput}/>
                 <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={newGoalTraitId}
-                    onValueChange={(itemValue) => setNewGoalTraitId(itemValue || undefined)}
-                    style={styles.picker}
-                  >
-                    <Picker.Item label="Link to Trait (Completion)" value={undefined} />
-                    {traits.map(trait => (
-                      <Picker.Item key={trait.id} label={trait.name} value={trait.id} />
-                    ))}
+                  <Picker selectedValue={newGoalTraitId} onValueChange={(itemValue) => setNewGoalTraitId(itemValue || undefined)} style={styles.picker} prompt="Link to Trait (Optional)">
+                    <Picker.Item label="No Linked Trait" value={undefined} />
+                    {traits.map((trait) => (<Picker.Item key={trait.id} label={trait.name} value={trait.id} />))}
                   </Picker>
                 </View>
-                <TextInput
-                  label="XP Value (Completion)"
-                  value={newGoalXpValue}
-                  onChangeText={setNewGoalXpValue}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  style={styles.textInput} // Ensure this style exists or add margin
-                />
-              </Dialog.Content>
-            </ScrollView>
-          </KeyboardAvoidingView>
-          <Dialog.Actions>
-            <Button onPress={() => setShowAddGoal(false)}>Cancel</Button>
-            <Button onPress={handleAddGoal}>Add</Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        <Dialog visible={!!editingGoal} onDismiss={() => setEditingGoal(null)}>
-          <Dialog.Title>Edit Goal</Dialog.Title>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0} // Adjust offset as needed
-          >
-            <ScrollView>
-              <Dialog.Content style={{ paddingBottom: 50 }}>
-                <TextInput
-                  label="Goal Name"
-                  value={editGoalName}
-                  onChangeText={setEditGoalName}
-                  mode="outlined"
-                  style={styles.textInput} // Ensure this style exists or add margin
-                />
-                <View style={styles.pickerContainer}>
-                  <Picker
-                    selectedValue={editGoalTraitId}
-                    onValueChange={(itemValue) => setEditGoalTraitId(itemValue || undefined)}
-                    style={styles.picker}
-                  >
-                    <Picker.Item label="Link to Trait (Completion)" value={undefined} />
-                    {traits.map(trait => (
-                      <Picker.Item key={trait.id} label={trait.name} value={trait.id} />
-                    ))}
-                  </Picker>
-                </View>
-                <TextInput
-                  label="XP Value (Completion)"
-                  value={editGoalXpValue}
-                  onChangeText={setEditGoalXpValue}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  style={styles.textInput} // Ensure this style exists or add margin
-                />
-              </Dialog.Content>
-            </ScrollView>
-          </KeyboardAvoidingView>
-          <Dialog.Actions>
-            <Button onPress={() => setEditingGoal(null)}>Cancel</Button>
-            <Button onPress={handleEditGoalSave}>Save</Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        <Dialog visible={!!deleteGoalId} onDismiss={() => setDeleteGoalId(null)}>
-          <Dialog.Title>Confirm Deletion</Dialog.Title>
-          <Dialog.Content>
-            <Text>Are you sure you want to delete this goal and all its tasks?</Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setDeleteGoalId(null)}>Cancel</Button>
-            <Button onPress={handleDeleteGoal} textColor={theme.colors.error}>Delete</Button>
-          </Dialog.Actions>
-        </Dialog>
-
-        <Dialog visible={!!editTask} onDismiss={() => setEditTask(null)}>
-          <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flexShrink: 1 }}>
-            <Dialog.Title>Edit Task</Dialog.Title>
-            <ScrollView style={{ flexShrink: 1 }}>
-              <Dialog.Content>
-                <TextInput
-                  label="Task Name"
-                  value={editTaskName}
-                  onChangeText={setEditTaskName}
-                  mode="outlined"
-                  autoFocus
-                />
-                <TextInput
-                  label="XP Value (Optional)"
-                  value={editTaskXpValue}
-                  onChangeText={setEditTaskXpValue}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  style={{ marginTop: 8 }}
-                />
+                <TextInput label="Completion XP (Optional)" value={newGoalXpValue} onChangeText={setNewGoalXpValue} mode="outlined" style={styles.textInput} keyboardType="numeric"/>
               </Dialog.Content>
             </ScrollView>
             <Dialog.Actions>
-              <Button onPress={() => setEditTask(null)}>Cancel</Button>
-              <Button onPress={handleEditTaskSave} disabled={!editTaskName.trim()}>Save</Button>
+              <Button onPress={closeAddGoalDialog}>Cancel</Button>
+              <Button onPress={handleAddGoal} disabled={!newGoalName.trim()} mode="contained">Add Goal</Button>
             </Dialog.Actions>
           </KeyboardAvoidingView>
         </Dialog>
 
-        <Dialog visible={!!deleteTask} onDismiss={() => setDeleteTask(null)}>
-          <Dialog.Title>Confirm Task Deletion</Dialog.Title>
+        <Dialog visible={showEditGoalDialog} onDismiss={closeEditGoalDialog} style={styles.dialog}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoidingView} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
+            <Dialog.Title style={styles.dialogTitle}>Edit Goal</Dialog.Title>
+            <ScrollView contentContainerStyle={styles.scrollViewContent}>
+              <Dialog.Content style={styles.dialogContent}>
+                <TextInput label="Goal Name" value={editGoalName} onChangeText={setEditGoalName} mode="outlined" style={styles.textInput}/>
+                <View style={styles.pickerContainer}>
+                  <Picker selectedValue={editGoalTraitId} onValueChange={(itemValue) => setEditGoalTraitId(itemValue || undefined)} style={styles.picker} prompt="Link to Trait (Optional)">
+                    <Picker.Item label="No Linked Trait" value={undefined} />
+                    {traits.map((trait) => (<Picker.Item key={trait.id} label={trait.name} value={trait.id} />))}
+                  </Picker>
+                </View>
+                <TextInput label="Completion XP (Optional)" value={editGoalXpValue} onChangeText={setEditGoalXpValue} mode="outlined" style={styles.textInput} keyboardType="numeric"/>
+              </Dialog.Content>
+            </ScrollView>
+            <Dialog.Actions>
+              <Button onPress={closeEditGoalDialog}>Cancel</Button>
+              <Button onPress={handleEditGoalSave} disabled={!editGoalName.trim()} mode="contained">Save Changes</Button>
+            </Dialog.Actions>
+          </KeyboardAvoidingView>
+        </Dialog>
+
+        <Dialog visible={showDeleteGoalDialog} onDismiss={closeDeleteGoalDialog} style={styles.dialog}>
+          <Dialog.Title>Confirm Deletion</Dialog.Title>
           <Dialog.Content>
-            <Text>Are you sure you want to delete this task?</Text>
+            <Text style={styles.deleteDialogText}>Are you sure you want to delete the goal "{deletingGoal?.name}"? All associated tasks will also be deleted. This action cannot be undone.</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setDeleteTask(null)}>Cancel</Button>
-            <Button onPress={handleDeleteTask} textColor={theme.colors.error}>Delete</Button>
+            <Button onPress={closeDeleteGoalDialog}>Cancel</Button>
+            <Button onPress={handleDeleteGoalConfirm} textColor={theme.colors.error}>Delete Goal</Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog visible={showEditTaskDialog} onDismiss={closeEditTaskDialog} style={styles.dialog}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoidingView} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
+            <Dialog.Title style={styles.dialogTitle}>Edit Task</Dialog.Title>
+            <ScrollView contentContainerStyle={styles.scrollViewContent}>
+              <Dialog.Content style={styles.dialogContent}>
+                <TextInput label="Task Name" value={editTaskName} onChangeText={setEditTaskName} mode="outlined" style={styles.textInput}/>
+                <TextInput label="Task XP (Optional)" value={editTaskXpValue} onChangeText={setEditTaskXpValue} mode="outlined" style={styles.textInput} keyboardType="numeric"/>
+              </Dialog.Content>
+            </ScrollView>
+            <Dialog.Actions>
+              <Button onPress={closeEditTaskDialog}>Cancel</Button>
+              <Button onPress={handleEditTaskSave} disabled={!editTaskName.trim()} mode="contained">Save Task</Button>
+            </Dialog.Actions>
+          </KeyboardAvoidingView>
+        </Dialog>
+
+        <Dialog visible={showDeleteTaskDialog} onDismiss={closeDeleteTaskDialog} style={styles.dialog}>
+          <Dialog.Title>Confirm Task Deletion</Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.deleteDialogText}>Are you sure you want to delete the task "{deletingTaskInfo?.taskName}"? This action cannot be undone.</Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={closeDeleteTaskDialog}>Cancel</Button>
+            <Button onPress={handleDeleteTaskConfirm} textColor={theme.colors.error}>Delete Task</Button>
           </Dialog.Actions>
         </Dialog>
 
       </Portal>
 
       <FAB
-        icon="plus"
         style={styles.fab}
-        onPress={() => setShowAddGoal(true)}
+        icon="plus"
+        onPress={openAddGoalDialog}
+        color={theme.colors.onPrimary}
+        label="Add Goal"
         accessibilityLabel="Add New Goal"
       />
     </View>

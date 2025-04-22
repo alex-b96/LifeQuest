@@ -1,10 +1,64 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
-import { Text, List, FAB, Portal, Dialog, TextInput, Button, Card, ProgressBar, IconButton } from 'react-native-paper';
+import { Text, FAB, Portal, Dialog, TextInput, Button, useTheme, MD3Theme } from 'react-native-paper';
 import { useAppContext } from '../../contexts/AppContext';
 import { Trait } from '../../models/Trait';
+import { TraitCard } from '../../components/traits/TraitCard';
+
+const getStyles = (theme: MD3Theme) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  listContent: {
+    padding: 16,
+    paddingBottom: 80,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: theme.colors.primary,
+  },
+  input: {
+    marginBottom: 16,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 50,
+    fontSize: 18,
+    color: theme.colors.onSurfaceVariant,
+  },
+  dialog: {
+    borderRadius: 8,
+  },
+  dialogTitle: {
+  },
+  dialogContent: {
+    paddingBottom: 0,
+  },
+  keyboardAvoidingView: {
+    width: '100%',
+  },
+  scrollViewContent: {
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 20,
+    flexGrow: 1,
+  },
+  deleteDialogText: {
+    fontSize: 16,
+    color: theme.colors.onSurfaceVariant,
+    lineHeight: 24,
+  },
+  deleteButton: {
+  }
+});
 
 export default function TraitsScreen() {
+  const theme = useTheme();
+  const styles = getStyles(theme);
   const { traits, addTrait, updateTrait, deleteTrait } = useAppContext();
   const [addDialogVisible, setAddDialogVisible] = useState(false);
   const [newTraitName, setNewTraitName] = useState('');
@@ -74,27 +128,19 @@ export default function TraitsScreen() {
     }
   };
 
-  const renderTrait = ({ item }: { item: Trait }) => (
-    <Card style={styles.card}>
-      <Card.Title title={item.name} subtitle={item.description || 'No description'} />
-      <Card.Content>
-        <Text>Level: {item.level}</Text>
-        <Text>Experience: {item.experiencePoints}</Text>
-        <ProgressBar progress={(item.experiencePoints % 100) / 100} style={styles.progressBar} />
-        <Text style={styles.lastUpdatedText}>Last Updated: {new Date(item.lastUpdated).toLocaleDateString()}</Text>
-      </Card.Content>
-      <Card.Actions>
-        <IconButton icon="pencil" onPress={() => showEditDialog(item)} />
-        <IconButton icon="delete" onPress={() => showDeleteDialog(item)} />
-      </Card.Actions>
-    </Card>
+  const renderItem = ({ item }: { item: Trait }) => (
+    <TraitCard
+      trait={item}
+      onEdit={showEditDialog}
+      onDelete={showDeleteDialog}
+    />
   );
 
   return (
     <View style={styles.container}>
       <FlatList
         data={traits}
-        renderItem={renderTrait}
+        renderItem={renderItem}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={<Text style={styles.emptyText}>No traits defined yet. Add one!</Text>}
         contentContainerStyle={styles.listContent}
@@ -105,10 +151,11 @@ export default function TraitsScreen() {
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.keyboardAvoidingView}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
           >
+            <Dialog.Title style={styles.dialogTitle}>Add New Trait</Dialog.Title>
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
-              <Dialog.Title>Add New Trait</Dialog.Title>
-              <Dialog.Content>
+              <Dialog.Content style={styles.dialogContent}>
                 <TextInput
                   label="Trait Name"
                   value={newTraitName}
@@ -117,7 +164,7 @@ export default function TraitsScreen() {
                   style={styles.input}
                 />
                 <TextInput
-                  label="Description"
+                  label="Description (Optional)"
                   value={newTraitDescription}
                   onChangeText={setNewTraitDescription}
                   mode="outlined"
@@ -129,35 +176,35 @@ export default function TraitsScreen() {
             </ScrollView>
             <Dialog.Actions>
               <Button onPress={hideAddDialog}>Cancel</Button>
-              <Button onPress={handleAddTrait} disabled={!newTraitName.trim()}>Add</Button>
+              <Button onPress={handleAddTrait} disabled={!newTraitName.trim()} mode="contained">Add</Button>
             </Dialog.Actions>
           </KeyboardAvoidingView>
         </Dialog>
 
         <Dialog visible={editDialogVisible} onDismiss={hideEditDialog} style={styles.dialog}>
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoidingView}>
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.keyboardAvoidingView} keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
+            <Dialog.Title style={styles.dialogTitle}>Edit Trait</Dialog.Title>
             <ScrollView contentContainerStyle={styles.scrollViewContent}>
-              <Dialog.Title>Edit Trait</Dialog.Title>
-              <Dialog.Content>
+              <Dialog.Content style={styles.dialogContent}>
                 <TextInput label="Trait Name" value={editTraitName} onChangeText={setEditTraitName} mode="outlined" style={styles.input} />
-                <TextInput label="Description" value={editTraitDescription} onChangeText={setEditTraitDescription} mode="outlined" style={styles.input} multiline numberOfLines={3} />
+                <TextInput label="Description (Optional)" value={editTraitDescription} onChangeText={setEditTraitDescription} mode="outlined" style={styles.input} multiline numberOfLines={3} />
               </Dialog.Content>
             </ScrollView>
             <Dialog.Actions>
               <Button onPress={hideEditDialog}>Cancel</Button>
-              <Button onPress={handleUpdateTrait} disabled={!editTraitName.trim()}>Save Changes</Button>
+              <Button onPress={handleUpdateTrait} disabled={!editTraitName.trim()} mode="contained">Save Changes</Button>
             </Dialog.Actions>
           </KeyboardAvoidingView>
         </Dialog>
 
-        <Dialog visible={deleteDialogVisible} onDismiss={hideDeleteDialog}>
+        <Dialog visible={deleteDialogVisible} onDismiss={hideDeleteDialog} style={styles.dialog}>
           <Dialog.Title>Confirm Deletion</Dialog.Title>
           <Dialog.Content>
-            <Text>Are you sure you want to delete the trait "{deletingTrait?.name}"? This action cannot be undone.</Text>
+            <Text style={styles.deleteDialogText}>Are you sure you want to delete the trait "{deletingTrait?.name}"? This action cannot be undone.</Text>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={hideDeleteDialog}>Cancel</Button>
-            <Button onPress={handleDeleteTrait} textColor="red">Delete</Button>
+            <Button onPress={handleDeleteTrait} textColor={theme.colors.error} style={styles.deleteButton}>Delete</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
@@ -166,50 +213,9 @@ export default function TraitsScreen() {
         style={styles.fab}
         icon="plus"
         onPress={showAddDialog}
+        color={theme.colors.onPrimary}
+        accessibilityLabel="Add New Trait"
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  listContent: {
-    padding: 16,
-    paddingBottom: 80,
-  },
-  fab: {
-    position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 0,
-  },
-  input: {
-    marginBottom: 16,
-  },
-  card: {
-    marginBottom: 16,
-  },
-  progressBar: {
-    marginTop: 8,
-  },
-  emptyText: {
-    textAlign: 'center',
-    marginTop: 50,
-    fontSize: 16,
-  },
-  dialog: {
-  },
-  keyboardAvoidingView: {
-    width: '100%',
-  },
-  scrollViewContent: {
-    flexGrow: 1,
-  },
-  lastUpdatedText: {
-    fontSize: 12,
-    color: 'gray',
-    marginTop: 4,
-  }
-});

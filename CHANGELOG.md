@@ -12,14 +12,29 @@ All notable changes to this project will be documented in this file.
 - Implemented full CRUD functionality for traits (Add, Edit, Delete) via dialogs on the `TraitsScreen`.
 - Added `KeyboardAvoidingView` and `ScrollView` to dialogs for better keyboard handling.
 - Displayed trait level, experience points (with progress bar), and last updated timestamp on trait cards.
+- Created reusable `TraitCard` component (`components/traits/TraitCard.tsx`) incorporating `react-native-paper` components and theme.
+- Created reusable `HabitCard` component (`components/habits/HabitCard.tsx`) for consistent habit display.
+- Created reusable `GoalCard` component (`components/goals/GoalCard.tsx`) with collapsible task list.
+- Created reusable `TaskItem` component (`components/goals/TaskItem.tsx`) for displaying individual tasks within goals.
 
 ### Changed
 - Updated `AppContextProps` type definitions to match implemented functions.
+- Refactored `TraitsScreen` (`app/(tabs)/traits.tsx`) to use `TraitCard` and apply consistent theme-based styling using `useTheme`.
+- Refactored `HabitsScreen` (`app/(tabs)/habits.tsx`) to use `HabitCard` and apply consistent theme-based styling using `useTheme`.
+- Refactored `GoalsScreen` (`app/(tabs)/goals.tsx`) to use `GoalCard` and `TaskItem`, apply consistent theme-based styling using `useTheme`, and standardized dialogs.
+- Standardized dialogs (Add/Edit/Delete) across Traits, Habits, and Goals screens for a consistent look and feel.
+- Cleaned up redundant rendering logic and styles from Traits, Habits, and Goals screens.
+- Moved goal/task actions (edit/delete) into `Menu` components within cards for a cleaner UI.
+- Ensured FABs and empty state views are styled consistently according to the theme.
+- Corrected argument passing for `updateGoalTask` in `GoalsScreen`.
+- Corrected object structure passed to `addGoal` in `GoalsScreen` to align with context expectations.
 
 ### Current State
-- Traits screen allows users to add, view, edit, and delete personal development traits.
-- Trait data is persisted locally using AsyncStorage.
-- Basic visualization of trait progress (level, XP) is in place.
+- Traits, Habits, and Goals screens now feature a consistent, refactored UI using reusable components and `react-native-paper`'s theming system.
+- CRUD operations for Traits, Habits, Goals, and Tasks are functional via standardized dialogs.
+- Trait, Habit, and Goal data is persisted locally using AsyncStorage.
+- Goal cards include collapsible task lists with inline task addition.
+- Need to review/verify `AppContext` logic, especially for `updateGoalTask` regarding progress calculation and immutable state updates.
 - Still need to link Goals/Habits completion to update trait experience points.
 
 ## [Unreleased] - 2025-04-18

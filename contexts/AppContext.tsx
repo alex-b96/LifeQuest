@@ -156,6 +156,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const task = { ...goal.tasks[taskIndex] };
 
     const awardingXp = completed && !task.completed;
+    const removingXp = !completed && task.completed;
     task.completed = completed;
     goal.tasks[taskIndex] = task;
 
@@ -167,6 +168,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
     if (awardingXp && goal.traitId && task.xpValue && task.xpValue > 0) {
       await addExperienceToTrait(goal.traitId, task.xpValue);
+    }
+
+    if (removingXp && goal.traitId && task.xpValue && task.xpValue > 0) {
+      await addExperienceToTrait(goal.traitId, -task.xpValue);
     }
   };
 
